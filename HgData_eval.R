@@ -77,8 +77,7 @@ dat_comp <- dat %>% dplyr::group_by(Sampling_year, Site_name, Species,
                    Soil_texture = first(Soil_texture),
                    prop_hours_low_wc = first(prop_hours_low_wc),
                    ERA5Land_avgTemp_C = first(ERA5Land_avgTemp_C),
-                   ERA5Land_MAT_C = first(ERA5Land_MAT_C),
-                   ERA5Land_prop_temp_hrs = first(ERA5Land_prop_temp_hrs))
+                   ERA5Land_MAT_C = first(ERA5Land_MAT_C))
 
 # --------------------------------------------------------------------------
 
