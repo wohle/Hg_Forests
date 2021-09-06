@@ -27,12 +27,9 @@ for (i in 1:length(dat$Sampling_date_DOY)) {
 # --------------------------------------------------------------------------
 
 # Calculate additional parameters: 
-# average GLEAM transpiration during sample life periods
 # proportion of daytime hours exceeding a VPD threshold to all daytime hours
 
-dat <- dat %>% dplyr::mutate(GLEAM_transpiration_avg = 
-                               GLEAM_transpiration_sum/Sampling_interval_d) %>%
-  dplyr::mutate(prop_dayVPD_1.2kPa =
+dat <- dat %>% dplyr::mutate(prop_dayVPD_1.2kPa =
                   (exhrs_dayVPD_1.2kPa/12)/Sampling_interval_d,
                 prop_dayVPD_1.6kPa = 
                   (exhrs_dayVPD_1.6kPa/12)/Sampling_interval_d,
