@@ -90,7 +90,12 @@ dat_comp <- dat %>% dplyr::group_by(Sampling_year, Site_name, Species,
                    ERA5Land_avgTemp_C = first(ERA5Land_avgTemp_C))
 #ICP Forests proprietory data can be obtained from
 #the ICP Forests Database (http://icp-forests.net/page/data-requests) upon 
-#request from the Programme Co-ordinating Center (PCC) in Eberswalde, Germany
+#request from the Programme Co-ordinating Center (PCC) in Eberswalde, Germany.
+#This concerns the main tree species on the forest plot (Main_tree_species),
+#average age of trees on plot (Mean_age_years), the average diameter at breast
+#height (DBH) of trees on plot, the basal area of each plot (Basal_area), the
+#number of trees per hectare on plot (Trees_per_hectare), and the respective
+#soil texture at each plot (Soil_texture)
                   # Main_tree_species = first(Main_tree_species),
                   # Mean_age_years = first(Mean_age_years),
                   # Mean_DBH = mean(DBH, na.rm = T),
@@ -135,188 +140,195 @@ remove(leaves)
 
 # --------------------------------------------------------------------------
 # --------------------------------------------------------------------------
-
-# Analysis of leaf nitrogen contents
-
-#Leaf N changes at the beginning and end of the growing season
-#-> solely include samples harvested during a relatively
-#stable leaf N period: 1st July - 31st Aug (broad leaves); 
-#1st Sept - winter (needles)
-
-leaves_stableN <- dat_y0 %>% dplyr::filter(Foliage_type == "leaf") %>%
-  dplyr::filter(between(Sampling_date_DOY, 182, 243))
-needles_stableN <- dat_y0 %>% dplyr::filter(Foliage_type == "needle") %>%
-  dplyr::filter(Sampling_date_DOY > 244)
-
-dat_y0_stableN <- rbind(leaves_stableN, needles_stableN) %>%
-  dplyr::filter(Species_short != "larch") #remove larch since there is only
-#one measurement available
-remove(leaves_stableN, needles_stableN)
-
-#Average leaf N and daily foliar Hg uptake per tree species
-Avg_leafN <- dat_y0_stableN %>% dplyr::group_by(Species_short) %>%
-  dplyr::summarise(Avg_leafN = mean(Ntot_mg_g, na.rm = T),
-                   Sd_leafN = sd(Ntot_mg_g, na.rm = T),
-                   Avg_Hgdaily = mean(Hg_daily, na.rm = T),
-                   Sd_Hgdaily = sd(Hg_daily, na.rm = T),
-                   n_samples = n())
-
-# ----------------------
-
-#Simple linear regression by tree species: 
-#daily foliar Hg uptake ~ leaf N;
-#only current-season (y0) needles
-lm_Hg_N_perspecies <- dat_y0_stableN %>%
-  dplyr::group_by(Species_short) %>%
-  do(model = lm(Hg_daily ~ Ntot_mg_g, data = .)) %>%
-  dplyr::mutate(coef_HgmassN = 0) %>%
-  dplyr::mutate(R2_mass = 0) %>% dplyr::mutate(n_fit = 0) %>%
-  dplyr::mutate(p_mass = 0) %>% dplyr::mutate(BP_test = 0)
-
-lm_Hg_N_perspecies$coef_HgmassN <- 
-  lapply(lm_Hg_N_perspecies$model, function(x) summary(x)$coefficients[2])
-lm_Hg_N_perspecies$R2_mass <- 
-  lapply(lm_Hg_N_perspecies$model, function(x) summary(x)$r.squared)
-lm_Hg_N_perspecies$n_fit <-
-  lapply(lm_Hg_N_perspecies$model, function(x) nobs(x))
-lm_Hg_N_perspecies$n_fit <- unlist(lm_Hg_N_perspecies$n_fit)
-lm_Hg_N_perspecies$p_mass <-
-  lapply(lm_Hg_N_perspecies$model, function(x) summary(x)$coefficients[2,4])
-lm_Hg_N_perspecies$BP_test <- #Breusch-Pagan test for heteroscedasity
-  lapply(lm_Hg_N_perspecies$model, function(x) lmtest::bptest(x)) 
-
-n_sites <- dat_y0_stableN %>% dplyr::group_by(Species_short) %>%
-  dplyr::summarise(n_sites = length(unique(Site_name)))
-
-lm_Hg_N_perspecies <- merge(lm_Hg_N_perspecies, n_sites,
-                            by = "Species_short") 
-lm_Hg_N_perspecies <- as.data.frame(lm_Hg_N_perspecies)
-
-remove(n_sites)
-
-# ----------------------
-
-#Simple linear regression by forest plot and tree species: 
-#daily foliar Hg uptake ~ leaf N;
-#only current-season (y0) needles
-
-lm_Hg_N_perspecies_site <- dat_y0_stableN %>%
-  dplyr::group_by(Species_short, Site_name) %>%
-  do(model = lm(Hg_ng_g ~ Ntot_mg_g, data = .)) %>%
-  dplyr::mutate(R2_mass = 0) %>% dplyr::mutate(n_fit = 0) %>%
-  dplyr::mutate(p_mass = 0) %>% dplyr::mutate(BP_test = 0)
-
-lm_Hg_N_perspecies_site$R2_mass <- 
-  lapply(lm_Hg_N_perspecies_site$model, function(x) summary(x)$r.squared)
-lm_Hg_N_perspecies_site$n_fit <-
-  lapply(lm_Hg_N_perspecies_site$model, function(x) nobs(x))
-lm_Hg_N_perspecies_site$n_fit <- unlist(lm_Hg_N_perspecies_site$n_fit)
-lm_Hg_N_perspecies_site$p_mass <-
-  lapply(lm_Hg_N_perspecies_site$model, function(x) summary(x)$coefficients[8])
-lm_Hg_N_perspecies_site$p_mass <- unlist(lm_Hg_N_perspecies_site$p_mass)
-lm_Hg_N_perspecies_site$BP_test <- #Breusch-Pagan test for heteroscedasity
-  lapply(lm_Hg_N_perspecies_site$model, function(x) lmtest::bptest(x))
-
-#Filter for forest plots with 20 or more foliage samples
-lm_Hg_N_perspecies_site_n20 <- lm_Hg_N_perspecies_site %>%
-  dplyr::filter(n_fit > 19)
-
-remove(lm_Hg_N_perspecies_site)
-
-# --------------------------------------------------------------------------
 # --------------------------------------------------------------------------
 
-# Analysis of Hg uptake and LMA (leaf mass per area)
+# The following code section can only be run after obtaining the necessary
+# ICP Forests proprietory data (foliar nitrogen concentrations, leaf mass area) 
+# in the ICP Forests Database (http://icp-forests.net/page/data-requests) 
+# from the Programme Co-ordinating Center (PCC) in Eberswalde, Germany 
 
-#Filter for available SLA (specific leaf area) values (cm2/g)
-#LMA = 1/SLA; with LMA being leaf mass per area (g/m2)
-dat_y0_LMA <- dat_y0_stableN %>%
-  dplyr::filter(!is.na(SLA_ICPF_cm2_g)) %>%
-  dplyr::mutate(LMA_g_m2 =
-                  (1/SLA_ICPF_cm2_g)*10000) %>%
-  dplyr::distinct(Sample_code, .keep_all = TRUE)
-
-#Exclude LMA needle values from Switzerland from the data set 
-#as needles were dried before area measurement
-dat_y0_LMA <- dat_y0_LMA %>%
-  dplyr::filter(!((Country == "Switzerland") & (Foliage_type == "needle")))
-
-#Median LMA, N and Hg daily per foliage type (leaf/needle)
-Median_LMA_N_Hgdaily <- dat_y0_LMA %>% 
-  dplyr::group_by(Foliage_type) %>%
-  dplyr::summarise(Median_LMA = median(LMA_g_m2, na.rm = T),
-                   Min_LMA = min(LMA_g_m2, na.rm = T),
-                   Max_LMA = max(LMA_g_m2, na.rm = T),
-                   Median_Hgdaily = median(Hg_daily, na.rm = T),
-                   Min_Hgdaily = min(Hg_daily, na.rm = T),
-                   Max_Hgdaily = max(Hg_daily, na.rm = T),
-                   Median_N = median(Ntot_mg_g, na.rm = T),
-                   Min_N = min(Ntot_mg_g, na.rm = T),
-                   Max_N = max(Ntot_mg_g, na.rm = T),
-                   n_samples = n())
-
+# # Analysis of leaf nitrogen contents
+# 
+# #Leaf N changes at the beginning and end of the growing season
+# #-> solely include samples harvested during a relatively
+# #stable leaf N period: 1st July - 31st Aug (broad leaves); 
+# #1st Sept - winter (needles)
+# 
+# leaves_stableN <- dat_y0 %>% dplyr::filter(Foliage_type == "leaf") %>%
+#   dplyr::filter(between(Sampling_date_DOY, 182, 243))
+# needles_stableN <- dat_y0 %>% dplyr::filter(Foliage_type == "needle") %>%
+#   dplyr::filter(Sampling_date_DOY > 244)
+# 
+# dat_y0_stableN <- rbind(leaves_stableN, needles_stableN) %>%
+#   dplyr::filter(Species_short != "larch") #remove larch since there is only
+# #one measurement available
+# remove(leaves_stableN, needles_stableN)
+# 
+# #Average leaf N and daily foliar Hg uptake per tree species
+# Avg_leafN <- dat_y0_stableN %>% dplyr::group_by(Species_short) %>%
+#   dplyr::summarise(Avg_leafN = mean(Ntot_mg_g, na.rm = T),
+#                    Sd_leafN = sd(Ntot_mg_g, na.rm = T),
+#                    Avg_Hgdaily = mean(Hg_daily, na.rm = T),
+#                    Sd_Hgdaily = sd(Hg_daily, na.rm = T),
+#                    n_samples = n())
+# 
+# # ----------------------
+# 
+# #Simple linear regression by tree species: 
+# #daily foliar Hg uptake ~ leaf N;
+# #only current-season (y0) needles
+# lm_Hg_N_perspecies <- dat_y0_stableN %>%
+#   dplyr::group_by(Species_short) %>%
+#   do(model = lm(Hg_daily ~ Ntot_mg_g, data = .)) %>%
+#   dplyr::mutate(coef_HgmassN = 0) %>%
+#   dplyr::mutate(R2_mass = 0) %>% dplyr::mutate(n_fit = 0) %>%
+#   dplyr::mutate(p_mass = 0) %>% dplyr::mutate(BP_test = 0)
+# 
+# lm_Hg_N_perspecies$coef_HgmassN <- 
+#   lapply(lm_Hg_N_perspecies$model, function(x) summary(x)$coefficients[2])
+# lm_Hg_N_perspecies$R2_mass <- 
+#   lapply(lm_Hg_N_perspecies$model, function(x) summary(x)$r.squared)
+# lm_Hg_N_perspecies$n_fit <-
+#   lapply(lm_Hg_N_perspecies$model, function(x) nobs(x))
+# lm_Hg_N_perspecies$n_fit <- unlist(lm_Hg_N_perspecies$n_fit)
+# lm_Hg_N_perspecies$p_mass <-
+#   lapply(lm_Hg_N_perspecies$model, function(x) summary(x)$coefficients[2,4])
+# lm_Hg_N_perspecies$BP_test <- #Breusch-Pagan test for heteroscedasity
+#   lapply(lm_Hg_N_perspecies$model, function(x) lmtest::bptest(x)) 
+# 
+# n_sites <- dat_y0_stableN %>% dplyr::group_by(Species_short) %>%
+#   dplyr::summarise(n_sites = length(unique(Site_name)))
+# 
+# lm_Hg_N_perspecies <- merge(lm_Hg_N_perspecies, n_sites,
+#                             by = "Species_short") 
+# lm_Hg_N_perspecies <- as.data.frame(lm_Hg_N_perspecies)
+# 
+# remove(n_sites)
+# 
+# # ----------------------
+# 
+# #Simple linear regression by forest plot and tree species: 
+# #daily foliar Hg uptake ~ leaf N;
+# #only current-season (y0) needles
+# 
+# lm_Hg_N_perspecies_site <- dat_y0_stableN %>%
+#   dplyr::group_by(Species_short, Site_name) %>%
+#   do(model = lm(Hg_ng_g ~ Ntot_mg_g, data = .)) %>%
+#   dplyr::mutate(R2_mass = 0) %>% dplyr::mutate(n_fit = 0) %>%
+#   dplyr::mutate(p_mass = 0) %>% dplyr::mutate(BP_test = 0)
+# 
+# lm_Hg_N_perspecies_site$R2_mass <- 
+#   lapply(lm_Hg_N_perspecies_site$model, function(x) summary(x)$r.squared)
+# lm_Hg_N_perspecies_site$n_fit <-
+#   lapply(lm_Hg_N_perspecies_site$model, function(x) nobs(x))
+# lm_Hg_N_perspecies_site$n_fit <- unlist(lm_Hg_N_perspecies_site$n_fit)
+# lm_Hg_N_perspecies_site$p_mass <-
+#   lapply(lm_Hg_N_perspecies_site$model, function(x) summary(x)$coefficients[8])
+# lm_Hg_N_perspecies_site$p_mass <- unlist(lm_Hg_N_perspecies_site$p_mass)
+# lm_Hg_N_perspecies_site$BP_test <- #Breusch-Pagan test for heteroscedasity
+#   lapply(lm_Hg_N_perspecies_site$model, function(x) lmtest::bptest(x))
+# 
+# #Filter for forest plots with 20 or more foliage samples
+# lm_Hg_N_perspecies_site_n20 <- lm_Hg_N_perspecies_site %>%
+#   dplyr::filter(n_fit > 19)
+# 
+# remove(lm_Hg_N_perspecies_site)
+# 
+# # --------------------------------------------------------------------------
+# # --------------------------------------------------------------------------
+# 
+# # Analysis of Hg uptake and LMA (leaf mass per area)
+# 
+# #Filter for available SLA (specific leaf area) values (cm2/g)
+# #LMA = 1/SLA; with LMA being leaf mass per area (g/m2)
+# dat_y0_LMA <- dat_y0_stableN %>%
+#   dplyr::filter(!is.na(SLA_ICPF_cm2_g)) %>%
+#   dplyr::mutate(LMA_g_m2 =
+#                   (1/SLA_ICPF_cm2_g)*10000) %>%
+#   dplyr::distinct(Sample_code, .keep_all = TRUE)
+# 
+# #Exclude LMA needle values from Switzerland from the data set 
+# #as needles were dried before area measurement
+# dat_y0_LMA <- dat_y0_LMA %>%
+#   dplyr::filter(!((Country == "Switzerland") & (Foliage_type == "needle")))
+# 
+# #Median LMA, N and Hg daily per foliage type (leaf/needle)
+# Median_LMA_N_Hgdaily <- dat_y0_LMA %>% 
+#   dplyr::group_by(Foliage_type) %>%
+#   dplyr::summarise(Median_LMA = median(LMA_g_m2, na.rm = T),
+#                    Min_LMA = min(LMA_g_m2, na.rm = T),
+#                    Max_LMA = max(LMA_g_m2, na.rm = T),
+#                    Median_Hgdaily = median(Hg_daily, na.rm = T),
+#                    Min_Hgdaily = min(Hg_daily, na.rm = T),
+#                    Max_Hgdaily = max(Hg_daily, na.rm = T),
+#                    Median_N = median(Ntot_mg_g, na.rm = T),
+#                    Min_N = min(Ntot_mg_g, na.rm = T),
+#                    Max_N = max(Ntot_mg_g, na.rm = T),
+#                    n_samples = n())
+# 
+# 
+# # --------------------------------------------------------------------------
+# 
+# # Calculate average values of Hg, LMA and N for subset of the
+# # data set for which LMA values are available
+# 
+# # Average LMA values per species
+# avg_LMA_species <- dat_y0_LMA %>%
+#   dplyr::group_by(Species_short) %>%
+#   dplyr::summarise(meanLMA = mean(LMA_g_m2, na.rm = TRUE),
+#                    sdLMA = sd(LMA_g_m2, na.rm = TRUE),
+#                    relsdLMA = sdLMA/meanLMA,
+#                    medianLMA = median(LMA_g_m2, na.rm = TRUE),
+#                    n_LMA_values = length(LMA_g_m2),
+#                    n_sites = length(unique(Site_name)),
+#                    Foliage_type = first(Foliage_type))
+# relsd_LMA_allspecies <- sd(dat_y0_LMA$SLMA_g_m2)/
+#   mean(dat_y0_LMA$LMA_g_m2)
+# 
+# # Average N value per species
+# 
+# avg_N_species <- dat_y0_LMA %>%
+#   dplyr::group_by(Species_short) %>%
+#   dplyr::summarise(meanN = mean(Ntot_mg_g, na.rm = TRUE),
+#                    sdN = sd(Ntot_mg_g, na.rm = TRUE),
+#                    relsdN = sdN/meanN,
+#                    medianN = median(Ntot_mg_g, na.rm = TRUE),
+#                    n_N_values = length(Ntot_mg_g),
+#                    n_sites = length(unique(Site_name)),
+#                    Foliage_type = first(Foliage_type))
+# relsd_N_allspecies <- sd(dat_y0_LMA$Ntot_mg_g)/
+#   mean(dat_y0_LMA$Ntot_mg_g)
+# 
+# # Average Hg value per species
+# 
+# avg_Hgdaily_species <- dat_y0_LMA %>%
+#   dplyr::group_by(Species_short) %>%
+#   dplyr::summarise(meanHgdaily = mean(Hg_daily, na.rm = TRUE),
+#                    sdHgdaily = sd(Hg_daily, na.rm = TRUE),
+#                    varHgdaily = var(Hg_daily, na.rm = TRUE),
+#                    relsdHgdaily = sdHgdaily/meanHgdaily,
+#                    medianHgdaily = median(Hg_daily, na.rm = TRUE),
+#                    n_Hgdaily_values = length(Hg_daily),
+#                    n_sites = length(unique(Site_name)),
+#                    Foliage_type = first(Foliage_type))
+# relsd_Hgdaily_allspecies <- sd(dat_y0_LMA$Hg_daily)/
+#   mean(dat_y0_LMA$Hg_daily)
+# 
+# avg_Hg_LMA_N_species <- merge(avg_Hgdaily_species, avg_N_species)
+# avg_Hg_LMA_N_species <- merge(avg_Hg_LMA_N_species, avg_LMA_species)
+# 
+# remove(avg_Hgdaily_species, avg_N_species, avg_LMA_species)
 
 # --------------------------------------------------------------------------
-
-# Calculate average values of Hg, LMA and N for subset of the
-# data set for which LMA values are available
-
-# Average LMA values per species
-avg_LMA_species <- dat_y0_LMA %>%
-  dplyr::group_by(Species_short) %>%
-  dplyr::summarise(meanLMA = mean(LMA_g_m2, na.rm = TRUE),
-                   sdLMA = sd(LMA_g_m2, na.rm = TRUE),
-                   relsdLMA = sdLMA/meanLMA,
-                   medianLMA = median(LMA_g_m2, na.rm = TRUE),
-                   n_LMA_values = length(LMA_g_m2),
-                   n_sites = length(unique(Site_name)),
-                   Foliage_type = first(Foliage_type))
-relsd_LMA_allspecies <- sd(dat_y0_LMA$SLMA_g_m2)/
-  mean(dat_y0_LMA$LMA_g_m2)
-
-# Average N value per species
-
-avg_N_species <- dat_y0_LMA %>%
-  dplyr::group_by(Species_short) %>%
-  dplyr::summarise(meanN = mean(Ntot_mg_g, na.rm = TRUE),
-                   sdN = sd(Ntot_mg_g, na.rm = TRUE),
-                   relsdN = sdN/meanN,
-                   medianN = median(Ntot_mg_g, na.rm = TRUE),
-                   n_N_values = length(Ntot_mg_g),
-                   n_sites = length(unique(Site_name)),
-                   Foliage_type = first(Foliage_type))
-relsd_N_allspecies <- sd(dat_y0_LMA$Ntot_mg_g)/
-  mean(dat_y0_LMA$Ntot_mg_g)
-
-# Average Hg value per species
-
-avg_Hgdaily_species <- dat_y0_LMA %>%
-  dplyr::group_by(Species_short) %>%
-  dplyr::summarise(meanHgdaily = mean(Hg_daily, na.rm = TRUE),
-                   sdHgdaily = sd(Hg_daily, na.rm = TRUE),
-                   varHgdaily = var(Hg_daily, na.rm = TRUE),
-                   relsdHgdaily = sdHgdaily/meanHgdaily,
-                   medianHgdaily = median(Hg_daily, na.rm = TRUE),
-                   n_Hgdaily_values = length(Hg_daily),
-                   n_sites = length(unique(Site_name)),
-                   Foliage_type = first(Foliage_type))
-relsd_Hgdaily_allspecies <- sd(dat_y0_LMA$Hg_daily)/
-  mean(dat_y0_LMA$Hg_daily)
-
-avg_Hg_LMA_N_species <- merge(avg_Hgdaily_species, avg_N_species)
-avg_Hg_LMA_N_species <- merge(avg_Hg_LMA_N_species, avg_LMA_species)
-
-remove(avg_Hgdaily_species, avg_N_species, avg_LMA_species)
-
 # --------------------------------------------------------------------------
 # --------------------------------------------------------------------------
 
 # Analysis of Hg uptake and hourly daytime vapor pressure deficit (dayVPD) 
 # values exceeding a certain threshold value (exhrs)
-# threshold values are 1.2 kPa; 1.6 kPa and 2 kPa
+# threshold values are 1.2 kPa; 1.6 kPa; 2 kPa and 3 kPa
 
 #Filter for available exceedance hours of daytime VPD > threshold value
-#VPD threshold values: 1.2 kPa; 1.6 kPa; 2 kPa
+#VPD threshold values: 1.2 kPa; 1.6 kPa; 2 kPa; 3 kPa
 #Calculate ratio of exceedance hrs day VPD > 1.2 kPa to all daytime hours
 
 dat_comp_y0_VPD <- dat_comp_y0 %>%
@@ -341,7 +353,7 @@ avg_ratio_dayVPDexhrs1.2kPa_allhrs <- dat_comp_y0_VPD %>%
 # daily Hg uptake rate ~ proportion of VPD exceedance hours > threshold
 
 proportions <- c("prop_dayVPD_1.2kPa", "prop_dayVPD_1.6kPa", 
-                 "prop_dayVPD_2kPa")
+                 "prop_dayVPD_2kPa", "prop_dayVPD_3kPa")
 
 #Initialize empty data frame for linear regression parameters
 lm_avgHgdaily_propVPD <- list()
@@ -353,6 +365,8 @@ for (i in 1:length(proportions)) {
   
   lm <- dat_comp_y0_VPD %>%
     dplyr::filter(!is.na(Avg_Hg_daily)) %>% #lm() does not allow NA
+    dplyr::filter(Species_short %in% c("beech", "oak",
+                                       "pine", "spruce")) %>%
     dplyr::group_by(Species_short) %>%
     do(model = lm(regr, data = .)) %>%
     dplyr::mutate(coef = 0) %>%
@@ -631,70 +645,80 @@ summary_species_short_p <-
         legend.position="none")
 summary_species_short_p
 
+# --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
-#Plot of average Hg, LMA, N per tree species in three subplots (Fig. 4)
+# This plot requires data from the ICP Forests Database
 
-HgN_p <- ggplot(avg_Hg_LMA_N_species, aes(x = meanN, y = meanHgdaily,
-                                          color = Species_short,
-                                          shape = Foliage_type)) +
-  geom_point(size = 4) +
-  geom_errorbar(aes(ymin = meanHgdaily - sdHgdaily, ymax = meanHgdaily + sdHgdaily)) + 
-  geom_errorbarh(aes(xmin = meanN - sdN, xmax = meanN + sdN)) +
-  xlab(TeX("Average foliar nitrogen concentration $($$\\mg$ N g$^{-1}_{d.w.}$$)$")) +
-  ylab(TeX("Average daily Hg uptake $ $ $($$\\ng$ Hg g$^{-1}_{d.w.}$  d$^{-1}$$)$")) +
-  theme_bw() +
-  theme(axis.text.x = element_text(size = 11), 
-        axis.text.y = element_text(size = 11),
-        axis.title.x = element_text(size = 11, vjust = - 1),
-        axis.title.y = element_text(size = 11, vjust = 4),
-        strip.text.y = element_text(size = 11),
-        legend.title = element_blank(),
-        legend.text = element_text(size = 11),
-        plot.margin = unit(c(0.5, 0.5, 0.5, 1), "cm"))
 
-HgLMA_p <- ggplot(avg_Hg_LMA_N_species, aes(x = meanLMA, y = meanHgdaily,
-                                            color = Species_short,
-                                            shape = Foliage_type)) +
-  geom_point(size = 4) +
-  geom_errorbar(aes(ymin = meanHgdaily - sdHgdaily, ymax = meanHgdaily + sdHgdaily)) + 
-  geom_errorbarh(aes(xmin = meanLMA - sdLMA, xmax = meanLMA + sdLMA)) +
-  xlab(TeX("Average LMA $($$\\g$ m$^{-2}_{leaf}$$)$")) +
-  ylab(TeX("Average daily Hg uptake $ $ $($$\\ng$ Hg g$^{-1}_{d.w.}$  d$^{-1}$$)$")) +
-  theme_bw() +
-  theme(axis.text.x = element_text(size = 11), 
-        axis.text.y = element_text(size = 11),
-        axis.title.x = element_text(size = 11, vjust = - 1),
-        axis.title.y = element_text(size = 11, vjust = 4),
-        strip.text.y = element_text(size = 11),
-        legend.title = element_blank(),
-        legend.text = element_text(size = 10),
-        plot.margin = unit(c(0.5, 0.5, 0.5, 1), "cm"))
+# #Plot of average Hg, LMA, N per tree species in three subplots (Fig. 4)
+# 
+# HgN_p <- ggplot(avg_Hg_LMA_N_species, aes(x = meanN, y = meanHgdaily,
+#                                           color = Species_short,
+#                                           shape = Foliage_type)) +
+#   geom_point(size = 4) +
+#   geom_errorbar(aes(ymin = meanHgdaily - sdHgdaily, ymax = meanHgdaily + sdHgdaily)) + 
+#   geom_errorbarh(aes(xmin = meanN - sdN, xmax = meanN + sdN)) +
+#   xlab(TeX("Average foliar nitrogen concentration $($$\\mg$ N g$^{-1}_{d.w.}$$)$")) +
+#   ylab(TeX("Average daily Hg uptake $ $ $($$\\ng$ Hg g$^{-1}_{d.w.}$  d$^{-1}$$)$")) +
+#   theme_bw() +
+#   theme(axis.text.x = element_text(size = 11), 
+#         axis.text.y = element_text(size = 11),
+#         axis.title.x = element_text(size = 11, vjust = - 1),
+#         axis.title.y = element_text(size = 11, vjust = 4),
+#         strip.text.y = element_text(size = 11),
+#         legend.title = element_blank(),
+#         legend.text = element_text(size = 11),
+#         plot.margin = unit(c(0.5, 0.5, 0.5, 1), "cm"))
+# 
+# HgLMA_p <- ggplot(avg_Hg_LMA_N_species, aes(x = meanLMA, y = meanHgdaily,
+#                                             color = Species_short,
+#                                             shape = Foliage_type)) +
+#   geom_point(size = 4) +
+#   geom_errorbar(aes(ymin = meanHgdaily - sdHgdaily, ymax = meanHgdaily + sdHgdaily)) + 
+#   geom_errorbarh(aes(xmin = meanLMA - sdLMA, xmax = meanLMA + sdLMA)) +
+#   xlab(TeX("Average LMA $($$\\g$ m$^{-2}_{leaf}$$)$")) +
+#   ylab(TeX("Average daily Hg uptake $ $ $($$\\ng$ Hg g$^{-1}_{d.w.}$  d$^{-1}$$)$")) +
+#   theme_bw() +
+#   theme(axis.text.x = element_text(size = 11), 
+#         axis.text.y = element_text(size = 11),
+#         axis.title.x = element_text(size = 11, vjust = - 1),
+#         axis.title.y = element_text(size = 11, vjust = 4),
+#         strip.text.y = element_text(size = 11),
+#         legend.title = element_blank(),
+#         legend.text = element_text(size = 10),
+#         plot.margin = unit(c(0.5, 0.5, 0.5, 1), "cm"))
+# 
+# NLMA_p <- ggplot(avg_Hg_LMA_N_species, aes(x = meanLMA, y = meanN,
+#                                            color = Species_short,
+#                                            shape = Foliage_type)) +
+#   geom_point(size = 3) +
+#   geom_errorbar(aes(ymin = meanN - sdN, ymax = meanN + sdN)) + 
+#   geom_errorbarh(aes(xmin = meanLMA - sdLMA, xmax = meanLMA + sdLMA)) +
+#   xlab(TeX("Average LMA $($$\\g$ m$^{-2}_{leaf}$$)$")) +
+#   ylab(TeX("Average foliar nitrogen concentration $ $ $($$\\mg$ N g$^{-1}_{d.w.}$$)$")) +
+#   theme_bw() +
+#   theme(axis.text.x = element_text(size = 11), 
+#         axis.text.y = element_text(size = 11),
+#         axis.title.x = element_text(size = 11, vjust = - 1),
+#         axis.title.y = element_text(size = 11, vjust = 4),
+#         strip.text.y = element_text(size = 11),
+#         legend.title = element_blank(),
+#         legend.text = element_text(size = 11),
+#         plot.margin = unit(c(0.5, 0.5, 0.5, 1), "cm"))
+# 
+# HgNLMA_p <- ggarrange(HgLMA_p, HgN_p, NLMA_p,
+#                       labels = c("(a)", "(b)", "(c)"),
+#                       font.label = list(size = 11),
+#                       ncol = 2, nrow = 2,
+#                       common.legend = TRUE, legend = "bottom")
+# 
+# HgNLMA_p
 
-NLMA_p <- ggplot(avg_Hg_LMA_N_species, aes(x = meanLMA, y = meanN,
-                                           color = Species_short,
-                                           shape = Foliage_type)) +
-  geom_point(size = 3) +
-  geom_errorbar(aes(ymin = meanN - sdN, ymax = meanN + sdN)) + 
-  geom_errorbarh(aes(xmin = meanLMA - sdLMA, xmax = meanLMA + sdLMA)) +
-  xlab(TeX("Average LMA $($$\\g$ m$^{-2}_{leaf}$$)$")) +
-  ylab(TeX("Average foliar nitrogen concentration $ $ $($$\\mg$ N g$^{-1}_{d.w.}$$)$")) +
-  theme_bw() +
-  theme(axis.text.x = element_text(size = 11), 
-        axis.text.y = element_text(size = 11),
-        axis.title.x = element_text(size = 11, vjust = - 1),
-        axis.title.y = element_text(size = 11, vjust = 4),
-        strip.text.y = element_text(size = 11),
-        legend.title = element_blank(),
-        legend.text = element_text(size = 11),
-        plot.margin = unit(c(0.5, 0.5, 0.5, 1), "cm"))
-
-HgNLMA_p <- ggarrange(HgLMA_p, HgN_p, NLMA_p,
-                      labels = c("(a)", "(b)", "(c)"),
-                      font.label = list(size = 11),
-                      ncol = 2, nrow = 2,
-                      common.legend = TRUE, legend = "bottom")
-
-HgNLMA_p
+# --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
 
 
 #Plot of average daily Hg uptake rates of pine and spruce needles 
