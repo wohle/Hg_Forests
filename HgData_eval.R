@@ -1,7 +1,6 @@
 
 require(dplyr)
 require(ggplot2)
-require(openxlsx)
 require(modern)
 require(ggpubr)
 require(latex2exp)
