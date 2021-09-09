@@ -811,10 +811,9 @@ annotate_figure(HgVPD_p,
 #Plot of average daily Hg uptake rates per forest site versus 
 #proportion of hours during life period soil moisture < threshold (Fig. 6)
 
-bop_soil <- dat_comp_y0_soil %>% 
-  dplyr::filter(Species_short %in% c("pine", "beech", "oak"))
-
-Hgsoilmoistprop_species_p <- ggplot(bop_soil,
+Hgsoilmoistprop_species_p <- ggplot(subset(dat_comp_y0_soil,
+                                           Species_short %in% 
+                                             c("pine", "beech", "oak")),
                                     aes(x = prop_hours_low_wc,
                                         y = Avg_Hg_daily)) +
   
@@ -876,6 +875,77 @@ spruceneedle_age_conc_p <-
         #        plot.margin = unit(c(0.3, 0, 0, 1), "cm"),
         legend.position="none")
 spruceneedle_age_conc_p
+
+# --------------------------------------------------------------------------
+# --------------------------------------------------------------------------
+
+# Supplementary plot pdf for linear regression parameters of
+# foliar Hg uptake rates versus parameters of interest
+
+# # Linear regression plots of Hg daily with parameters 
+# #of interest for each species group individually
+# 
+# Species_group <- as.factor(c("beech", "oak", "pine", "spruce"))
+# Species_group <- as.data.frame(Species_group)
+# colnames(Species_group) <- "Species_group"
+# 
+# Parameters <- c("Latitude", "Altitude_m", 
+#                 "GLEAM_transpiration_avg",
+#                 "ERA5Land_avgTemp_C")
+# Parameters <- as.data.frame(Parameters)
+# 
+# Par_Labels <- c("Latitude", "Altitude (m)",
+#                 "Avg. of GLEAM transpiration $($mm day$^{-1}$$)$",
+#                 "Avg. ERA5-Land 2 m air temperature (°C)")
+# Par_Labels <- as.data.frame(Par_Labels)
+# 
+# graphics.off() #close possibly open graphics
+# #Creation of pdf
+# pdf("LinRegression_Hgdaily_vs_Parameters.pdf")
+# par(mfrow = c(3,2))
+# 
+# for (i in 1:length(Parameters[,1])) {
+#   for (j in 1:length(Species_group[,1])) {
+#     
+#     dat_regr_plots <- dat_comp_y0 %>%
+#       dplyr::filter(Species_short == Species_group[j,1]) %>%
+#       dplyr::ungroup() %>%
+#       dplyr::select(Avg_Hg_daily, Parameters[i,1], Std_Hg_daily)
+#     
+#     dat_regr_plots <- as.data.frame(dat_regr_plots)
+#     
+#     print(ggplot(dat_regr_plots, aes_string(x = names(dat_regr_plots)[2],
+#                                             y = names(dat_regr_plots)[1])) +
+#             geom_errorbar(aes(ymin = Avg_Hg_daily - Std_Hg_daily,
+#                               ymax = Avg_Hg_daily + Std_Hg_daily),
+#                           color = "brown") +
+#             geom_point(color = "brown", size = 2) +
+#             geom_smooth(formula = y ~ x, method = "lm", se = F, na.rm = T,
+#                         color = "black", linetype = "dashed") +
+#             stat_poly_eq(formula = y ~ x, 
+#                          aes(label = paste(..eq.label.., ..rr.label..,
+#                                            ..p.value.label.., sep = "~~~")), 
+#                          parse = TRUE) +
+#             xlab(TeX(as.character(Par_Labels[i,1]))) +
+#             ylab(TeX(paste(as.character(Species_group[j,1]),
+#                            "Hg uptake $($$\\ng$ Hg g$^{-1}_{d.w.}$ day$^{-1}$$)$", sep = " "))) +
+#             theme_bw() +
+#             theme(axis.text.x = element_text(size = 18), 
+#                   axis.text.y = element_text(size = 18),
+#                   axis.title.x = element_text(size = 18, vjust = - 0.5),
+#                   axis.title.y = element_text(size = 18, vjust = 2),
+#                   strip.text.y = element_text(size = 18),
+#                   legend.title = element_blank(),
+#                   legend.text = element_text(size = 18)))
+#     
+#   }
+#   
+# }
+# 
+# #close Plot-Pdf
+# dev.off()
+
+# --------------------------------------------------------------------------
 
 
 
