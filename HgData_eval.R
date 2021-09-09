@@ -444,6 +444,9 @@ for (i in 1:length(lm_Hg_undercuthrs_perspecies$Species_short)) {
 # Linear regression of daily foliar Hg uptake and geographic and 
 # tree-specific parameters
 
+# To calculate all linear regression parameters, ICP Forests proprietory
+# data (Mean_age_years, Mean_DBH) have to be requested from the ICP Forests
+# Database (http://icp-forests.net/page/data-requests)
 
 # parameters_oi <- c("Mean_age_years", "Altitude_m", "Latitude", "Mean_DBH", 
 #                    "GLEAM_transpiration_avg",
@@ -650,6 +653,7 @@ summary_species_short_p
 # --------------------------------------------------------------------------
 
 # This plot requires data from the ICP Forests Database
+# http://icp-forests.net/page/data-requests
 
 
 # #Plot of average Hg, LMA, N per tree species in three subplots (Fig. 4)
