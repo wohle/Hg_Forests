@@ -1,14 +1,12 @@
 require(dplyr)
 require(ggplot2)
-require(openxlsx)
 require(modern)
 require(TDPanalysis)
 
 # --------------------------------------------------------------------------
 
-# Read data
-
-dat <- read.csv("https://zenodo.org")
+# Before running the preprocessing script, data have to be requested from
+# the ICP Forests Database (http://icp-forests.net/page/data-requests)
 
 
 # --------------------------------------------------------------------------
