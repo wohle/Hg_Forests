@@ -36,7 +36,7 @@ for (i in 1:length(dat$Sampling_date_DOY)) {
   }
 }
 
-#Convert sampling date to date
+#Convert sampling date
 dat$Sampling_date <- as.Date(dat$Sampling_date, "%d/%m/%Y")
 
 # --------------------------------------------------------------------------
