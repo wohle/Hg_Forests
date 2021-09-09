@@ -6,12 +6,25 @@ require(modern)
 require(ggpubr)
 require(latex2exp)
 require(ggpmisc)
+require(grid)
 
 # --------------------------------------------------------------------------
 
-# Read data
+# Read data from Zenodo repository
 
-dat <- read.csv("https://zenodo.org")
+text_connect <- 
+  readLines("https://zenodo.org/record/5495180/files/FoliarHg.csv?download=1")
+skip_info <- text_connect[-2] #skip explanatory row
+
+dat <- read.csv(textConnection(skip_info),
+                header = TRUE, stringsAsFactors = FALSE)
+
+# Store explanatory information on parameters in dat in separate data frame
+
+data_explanation <- read.csv(textConnection(text_connect[1:2]), sep = ",")
+parameter <- colnames(data_explanation)
+info <- as.character(data_explanation[1,])
+data_explanation <- data.frame(parameter, info)
 
 
 #Assign correct sampling day DOY for current-season 
@@ -24,6 +37,9 @@ for (i in 1:length(dat$Sampling_date_DOY)) {
   }
 }
 
+#Convert sampling date to date
+dat$Sampling_date <- as.Date(dat$Sampling_date, "%d/%m/%Y")
+
 # --------------------------------------------------------------------------
 
 # Calculate additional parameters: 
@@ -34,7 +50,9 @@ dat <- dat %>% dplyr::mutate(prop_dayVPD_1.2kPa =
                 prop_dayVPD_1.6kPa = 
                   (exhrs_dayVPD_1.6kPa/12)/Sampling_interval_d,
                 prop_dayVPD_2kPa = 
-                  (exhrs_dayVPD_2kPa/12)/Sampling_interval_d)
+                  (exhrs_dayVPD_2kPa/12)/Sampling_interval_d,
+                prop_dayVPD_3kPa =
+                  (exhrs_dayVPD_3kPa/12)/Sampling_interval_d)
 
 # Summarize data
 
@@ -56,25 +74,29 @@ dat_comp <- dat %>% dplyr::group_by(Sampling_year, Site_name, Species,
                    Sampling_date_DOY = first(Sampling_date_DOY),
                    Species_short = first(Species_short),
                    Foliage_type = first(Foliage_type),
-                   Main_tree_species = first(Main_tree_species),
-                   Mean_age_years = first(Mean_age_years),
                    Altitude_m = first(Altitude_m),
-                   Mean_DBH = mean(DBH, na.rm = T),
-                   Basal_area = first(Basal_area),
-                   Trees_per_hectare = first(Trees_per_hectare),
                    Sampling_interval_d = first(Sampling_interval_d),
                    BeginGS_final_DOY = first(BeginGS_final_DOY),
                    GLEAM_transpiration_avg = first(GLEAM_transpiration_avg),
                    exhrs_dayVPD_1.2kPa = first(exhrs_dayVPD_1.2kPa),
                    exhrs_dayVPD_1.6kPa = first(exhrs_dayVPD_1.6kPa),
                    exhrs_dayVPD_2kPa = first(exhrs_dayVPD_2kPa),
+                   exhrs_dayVPD_3kPa = first(exhrs_dayVPD_3kPa),
                    prop_dayVPD_1.2kPa = first(prop_dayVPD_1.2kPa),
                    prop_dayVPD_1.6kPa = first(prop_dayVPD_1.6kPa),
                    prop_dayVPD_2kPa = first(prop_dayVPD_2kPa),
-                   Soil_texture = first(Soil_texture),
+                   prop_dayVPD_3kPa = first(prop_dayVPD_3kPa),
                    prop_hours_low_wc = first(prop_hours_low_wc),
-                   ERA5Land_avgTemp_C = first(ERA5Land_avgTemp_C),
-                   ERA5Land_MAT_C = first(ERA5Land_MAT_C))
+                   ERA5Land_avgTemp_C = first(ERA5Land_avgTemp_C))
+#ICP Forests proprietory data can be obtained from
+#the ICP Forests Database (http://icp-forests.net/page/data-requests) upon 
+#request from the Programme Co-ordinating Center (PCC) in Eberswalde, Germany
+                  # Main_tree_species = first(Main_tree_species),
+                  # Mean_age_years = first(Mean_age_years),
+                  # Mean_DBH = mean(DBH, na.rm = T),
+                  # Basal_area = first(Basal_area),
+                  # Trees_per_hectare = first(Trees_per_hectare),
+                  # Soil_texture = first(Soil_texture))
 
 # --------------------------------------------------------------------------
 
