@@ -18,7 +18,7 @@ skip_info <- text_connect[-2] #skip explanatory row
 dat <- read.csv(textConnection(skip_info),
                 header = TRUE, stringsAsFactors = FALSE)
 
-# Store explanatory information on parameters in dat in separate data frame
+# Store explanatory information on parameters in separate data frame
 
 data_explanation <- read.csv(textConnection(text_connect[1:2]), sep = ",")
 parameter <- colnames(data_explanation)
