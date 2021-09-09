@@ -55,9 +55,9 @@ dat <- dat %>% dplyr::mutate(prop_dayVPD_1.2kPa =
 
 # Summarize data
 
-#data has to aggregated (averaged) by forest site in order to perform 
-#correlations with site-specific parameters
-#create dat_comp from data set
+#data has to be aggregated (averaged) by forest site in order to detect 
+#possible correlations with site-specific parameters
+#create dat_comp from main data frame (dat)
 
 dat_comp <- dat %>% dplyr::group_by(Sampling_year, Site_name, Species,
                                     Needle_age_class) %>%
@@ -323,11 +323,10 @@ remove(leaves)
 # --------------------------------------------------------------------------
 
 # Analysis of Hg uptake and hourly daytime vapor pressure deficit (dayVPD) 
-# values exceeding a certain threshold value (exhrs)
+# values exceeding a certain threshold value
 # threshold values are 1.2 kPa; 1.6 kPa; 2 kPa and 3 kPa
 
 #Filter for available exceedance hours of daytime VPD > threshold value
-#VPD threshold values: 1.2 kPa; 1.6 kPa; 2 kPa; 3 kPa
 #Calculate ratio of exceedance hrs day VPD > 1.2 kPa to all daytime hours
 
 dat_comp_y0_VPD <- dat_comp_y0 %>%
