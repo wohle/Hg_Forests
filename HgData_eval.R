@@ -430,7 +430,12 @@ for (i in 1:length(lm_Hg_undercuthrs_perspecies$Species_short)) {
 # Linear regression of daily foliar Hg uptake and geographic and 
 # tree-specific parameters
 
-parameters_oi <- c("Mean_age_years", "Altitude_m", "Latitude", "Mean_DBH", 
+
+# parameters_oi <- c("Mean_age_years", "Altitude_m", "Latitude", "Mean_DBH", 
+#                    "GLEAM_transpiration_avg",
+#                    "ERA5Land_avgTemp_C")
+
+parameters_oi <- c("Altitude_m", "Latitude", 
                    "GLEAM_transpiration_avg",
                    "ERA5Land_avgTemp_C")
 
@@ -620,8 +625,8 @@ summary_species_short_p <-
         axis.text.y = element_text(size = 18),
         axis.title.y = element_text(size = 18, vjust = 2),
         axis.ticks.x = element_blank(),
-        legend.title = element_text(size = 22),
-        legend.text = element_text(size = 22),
+        legend.title = element_text(size = 18),
+        legend.text = element_text(size = 18),
         #        plot.margin = unit(c(0.3, 0, 0, 1), "cm"),
         legend.position="none")
 summary_species_short_p
@@ -692,28 +697,30 @@ HgNLMA_p <- ggarrange(HgLMA_p, HgN_p, NLMA_p,
 HgNLMA_p
 
 
-#Plot of average daily Hg uptake rates of pine and spruce needles per 
-#forest site versus number of hours during life period VPD > 1.2 kPa (Fig. 5)
+#Plot of average daily Hg uptake rates of pine and spruce needles 
+#per forest site versus number of hours during life period 
+#VPD > 1.2 kPa (pine) and VPD > 3 kPa (spruce) (Fig. 5)
  
-HgVPDprop1.2kPa_sprucepine_p <- ggplot(subset(dat_comp_y0_VPD,
-                                              Species_short %in%
-                                                c("pine", "spruce")),
-                                       aes(x = prop_dayVPD_1.2kPa,
-                                           y = Avg_Hg_daily)) +
+HgVPDprop1.2kPa_pine_p <- ggplot(subset(dat_comp_y0_VPD,
+                                        Species_short %in% c("pine")),
+                                 aes(x = prop_dayVPD_1.2kPa,
+                                     y = Avg_Hg_daily)) +
+  geom_smooth(formula = y ~ x, method = "lm", se = F,
+              color = "darkgrey", linetype = "dashed") +
   geom_errorbar(aes(ymin = Avg_Hg_daily - Std_Hg_daily,
                     ymax = Avg_Hg_daily + Std_Hg_daily),
                 color = "cyan4") +
   geom_point(aes(shape = factor(Sampling_year)),
              color = "cyan4", size = 3) +
-  geom_smooth(formula = y ~ x, method = "lm", se = F,
-              color = "darkgrey", linetype = "dashed") +
   stat_poly_eq(formula = y ~ x,
                aes(label = paste(..eq.label.., sep = "~~~")),
-               label.x = "right", label.y = 0.98, size = 4, parse = TRUE) +
+               label.x = "right", label.y = 0.98, size = 5, parse = TRUE) +
   stat_poly_eq(formula = y ~ x,
                aes(label = paste(..rr.label.., ..p.value.label.., sep = "~~~")),
-               label.x = "right", label.y = 0.88, size = 4, parse = TRUE) +
+               label.x = "right", label.y = 0.92, size = 5, parse = TRUE) +
   facet_grid(rows = vars(Species_short)) +
+  xlim(c(0,0.49)) +
+  ylim(c(0, 0.18)) +
   xlab("Daytime proportion of hourly VPD > 1.2 kPa") +
   ylab(TeX("Average daily Hg uptake $ $ $($$\\ng$ Hg g$^{-1}_{d.w.}$  d$^{-1}$$)$")) +
   theme_bw() +
@@ -727,8 +734,51 @@ HgVPDprop1.2kPa_sprucepine_p <- ggplot(subset(dat_comp_y0_VPD,
         legend.title = element_blank(),
         legend.text = element_text(size = 16),
         plot.margin = unit(c(0.5, 0.5, 0.5, 1), "cm"))
-HgVPDprop1.2kPa_sprucepine_p
-
+#HgVPDprop1.2kPa_pine_p
+HgVPDprop3kPa_spruce_p <- ggplot(subset(dat_comp_y0_VPD,
+                                        Species_short %in% c("spruce")),
+                                 aes(x = prop_dayVPD_3kPa,
+                                     y = Avg_Hg_daily)) +
+  geom_smooth(formula = y ~ x, method = "lm", se = F,
+              color = "darkgrey", linetype = "dashed") +
+  geom_errorbar(aes(ymin = Avg_Hg_daily - Std_Hg_daily,
+                    ymax = Avg_Hg_daily + Std_Hg_daily),
+                color = "cyan4") +
+  geom_point(aes(shape = factor(Sampling_year)),
+             color = "cyan4", size = 3) +
+  stat_poly_eq(formula = y ~ x,
+               aes(label = paste(..eq.label.., sep = "~~~")),
+               label.x = "right", label.y = 0.98, size = 5, parse = TRUE) +
+  stat_poly_eq(formula = y ~ x,
+               aes(label = paste(..rr.label.., ..p.value.label.., sep = "~~~")),
+               label.x = "right", label.y = 0.92, size = 5, parse = TRUE) +
+  facet_grid(rows = vars(Species_short)) +
+  ylim(c(0, 0.18)) +
+  xlab("Daytime proportion of hourly VPD > 3 kPa") +
+  ylab(TeX("Average daily Hg uptake $ $ $($$\\ng$ Hg g$^{-1}_{d.w.}$  d$^{-1}$$)$")) +
+  theme_bw() +
+  theme(strip.background = element_rect(color = "black", fill = "gold1",
+                                        size = 1.5, linetype = "solid"),
+        axis.text.x = element_text(size = 16),
+        axis.text.y = element_text(size = 16),
+        axis.title.x = element_text(size = 16, vjust = - 1),
+        axis.title.y = element_text(size = 16, vjust = 4),
+        strip.text.y = element_text(size = 16),
+        legend.title = element_blank(),
+        legend.text = element_text(size = 16),
+        plot.margin = unit(c(0.5, 0.5, 0.5, 1), "cm"))
+#HgVPDprop3kPa_spruce_p
+HgVPD_p <- ggarrange(HgVPDprop1.2kPa_pine_p + rremove("ylab"), 
+                     HgVPDprop3kPa_spruce_p + rremove("ylab"),
+                     labels = c("(a)", "(b)"),
+                     label.x = 0.05,
+                     font.label = list(size = 16),
+                     ncol = 2, nrow = 1,
+                     common.legend = TRUE, legend = "right")
+annotate_figure(HgVPD_p, 
+                left = textGrob(TeX("Average daily Hg uptake $ $ $($$\\ng$ Hg g$^{-1}_{d.w.}$  d$^{-1}$$)$"), 
+                                rot = 90, vjust = 1, 
+                                gp = gpar(cex = 1.3)))
 
 #Plot of average daily Hg uptake rates per forest site versus 
 #proportion of hours during life period soil moisture < threshold (Fig. 6)
