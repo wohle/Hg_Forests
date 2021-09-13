@@ -620,12 +620,17 @@ leaf_Hgconc_DOY_p
 
 #Plot of median daily Hg uptake per tree species group (Fig. 3)
 
+colors_barplot <- c("#A65141", "#E7CDC2", "#394165", "#80A0C7", 
+                    "#FCF9F0", "#B1934A", "#DCA258", "#EEDA9D", "#8B9DAF")
+
 summary_species_short_p <- 
   ggplot(sum_dat_comp_y0, aes(x = reorder(Species_short,
                                           - Median_Hg_daily),
                               y = Median_Hg_daily)) +
   geom_bar(stat = "identity", aes(fill = Species_short), 
-           position = position_dodge2(width = 3, preserve = "single")) +
+           position = position_dodge2(width = 3, preserve = "single"),
+           color = "black") +
+  scale_fill_manual(values = colors_barplot) +
   xlab("") + 
   ylab(TeX("Median daily Hg uptake $($$\\ng$ Hg g$^{-1}_{d.w.}$  d$^{-1}$$)$")) +
   #scale_fill_manual(values = wes_palette("Cavalcanti1", n = 4)) +
@@ -640,8 +645,8 @@ summary_species_short_p <-
         axis.text.y = element_text(size = 18),
         axis.title.y = element_text(size = 18, vjust = 2),
         axis.ticks.x = element_blank(),
-        legend.title = element_text(size = 18),
-        legend.text = element_text(size = 18),
+        legend.title = element_text(size = 22),
+        legend.text = element_text(size = 22),
         #        plot.margin = unit(c(0.3, 0, 0, 1), "cm"),
         legend.position="none")
 summary_species_short_p
@@ -656,66 +661,80 @@ summary_species_short_p
 
 # #Plot of average Hg, LMA, N per tree species in three subplots (Fig. 4)
 # 
+# colors_points <- c("#E7CDC2", "#394165", "#FCF9F0", "#DCA258", 
+#                    "#EEDA9D", "#8B9DAF")
+# 
 # HgN_p <- ggplot(avg_Hg_LMA_N_species, aes(x = meanN, y = meanHgdaily,
-#                                           color = Species_short,
 #                                           shape = Foliage_type)) +
-#   geom_point(size = 4) +
 #   geom_errorbar(aes(ymin = meanHgdaily - sdHgdaily, ymax = meanHgdaily + sdHgdaily)) + 
 #   geom_errorbarh(aes(xmin = meanN - sdN, xmax = meanN + sdN)) +
-#   xlab(TeX("Average foliar nitrogen concentration $($$\\mg$ N g$^{-1}_{d.w.}$$)$")) +
-#   ylab(TeX("Average daily Hg uptake $ $ $($$\\ng$ Hg g$^{-1}_{d.w.}$  d$^{-1}$$)$")) +
+#   geom_point(aes(fill = factor(Species_short)), size = 4) +
+#   scale_fill_manual(values = colors_points) +
+#   scale_shape_manual(values = c(23:24)) +
+#   xlab(TeX("Avg. foliar nitrogen conc. $($$\\mg$ N g$^{-1}_{d.w.}$$)$")) +
+#   ylab(TeX("Avg. daily Hg uptake $ $ $($$\\ng$ Hg g$^{-1}_{d.w.}$  d$^{-1}$$)$")) +
 #   theme_bw() +
 #   theme(axis.text.x = element_text(size = 11), 
 #         axis.text.y = element_text(size = 11),
 #         axis.title.x = element_text(size = 11, vjust = - 1),
-#         axis.title.y = element_text(size = 11, vjust = 4),
+#         axis.title.y = element_text(size = 11, vjust = 2),
 #         strip.text.y = element_text(size = 11),
 #         legend.title = element_blank(),
 #         legend.text = element_text(size = 11),
-#         plot.margin = unit(c(0.5, 0.5, 0.5, 1), "cm"))
+#         plot.margin = unit(c(0.5, 0.5, 0.5, 1), "cm")) +
+#   guides(fill = guide_legend(override.aes = 
+#                                list(shape = c(23,24,23,23,24,24))))
+# #HgN_p
 # 
 # HgLMA_p <- ggplot(avg_Hg_LMA_N_species, aes(x = meanLMA, y = meanHgdaily,
-#                                             color = Species_short,
 #                                             shape = Foliage_type)) +
-#   geom_point(size = 4) +
 #   geom_errorbar(aes(ymin = meanHgdaily - sdHgdaily, ymax = meanHgdaily + sdHgdaily)) + 
 #   geom_errorbarh(aes(xmin = meanLMA - sdLMA, xmax = meanLMA + sdLMA)) +
-#   xlab(TeX("Average LMA $($$\\g$ m$^{-2}_{leaf}$$)$")) +
-#   ylab(TeX("Average daily Hg uptake $ $ $($$\\ng$ Hg g$^{-1}_{d.w.}$  d$^{-1}$$)$")) +
+#   geom_point(aes(fill = factor(Species_short)), size = 4) +
+#   scale_fill_manual(values = colors_points) +
+#   scale_shape_manual(values = c(23:24)) +
+#   xlab(TeX("Avg. LMA $($$\\g$ m$^{-2}_{leaf}$$)$")) +
+#   ylab(TeX("Avg. daily Hg uptake $ $ $($$\\ng$ Hg g$^{-1}_{d.w.}$  d$^{-1}$$)$")) +
 #   theme_bw() +
 #   theme(axis.text.x = element_text(size = 11), 
 #         axis.text.y = element_text(size = 11),
 #         axis.title.x = element_text(size = 11, vjust = - 1),
-#         axis.title.y = element_text(size = 11, vjust = 4),
-#         strip.text.y = element_text(size = 11),
-#         legend.title = element_blank(),
-#         legend.text = element_text(size = 10),
-#         plot.margin = unit(c(0.5, 0.5, 0.5, 1), "cm"))
-# 
-# NLMA_p <- ggplot(avg_Hg_LMA_N_species, aes(x = meanLMA, y = meanN,
-#                                            color = Species_short,
-#                                            shape = Foliage_type)) +
-#   geom_point(size = 3) +
-#   geom_errorbar(aes(ymin = meanN - sdN, ymax = meanN + sdN)) + 
-#   geom_errorbarh(aes(xmin = meanLMA - sdLMA, xmax = meanLMA + sdLMA)) +
-#   xlab(TeX("Average LMA $($$\\g$ m$^{-2}_{leaf}$$)$")) +
-#   ylab(TeX("Average foliar nitrogen concentration $ $ $($$\\mg$ N g$^{-1}_{d.w.}$$)$")) +
-#   theme_bw() +
-#   theme(axis.text.x = element_text(size = 11), 
-#         axis.text.y = element_text(size = 11),
-#         axis.title.x = element_text(size = 11, vjust = - 1),
-#         axis.title.y = element_text(size = 11, vjust = 4),
+#         axis.title.y = element_text(size = 11, vjust = 2),
 #         strip.text.y = element_text(size = 11),
 #         legend.title = element_blank(),
 #         legend.text = element_text(size = 11),
-#         plot.margin = unit(c(0.5, 0.5, 0.5, 1), "cm"))
+#         plot.margin = unit(c(0.5, 0.5, 0.5, 1), "cm")) +
+#   guides(fill = guide_legend(override.aes = 
+#                                list(shape = c(23,24,23,23,24,24))))
+# #HgLMA_p
+# 
+# NLMA_p <- ggplot(avg_Hg_LMA_N_species, aes(x = meanLMA, y = meanN,
+#                                            shape = Foliage_type)) +
+#   geom_errorbar(aes(ymin = meanN - sdN, ymax = meanN + sdN)) + 
+#   geom_errorbarh(aes(xmin = meanLMA - sdLMA, xmax = meanLMA + sdLMA)) +
+#   geom_point(aes(fill = factor(Species_short)), size = 4) +
+#   scale_fill_manual(values = colors_points) +
+#   scale_shape_manual(values = c(23:24)) +
+#   xlab(TeX("Avg. LMA $($$\\g$ m$^{-2}_{leaf}$$)$")) +
+#   ylab(TeX("Avg. foliar nitrogen conc. $ $ $($$\\mg$ N g$^{-1}_{d.w.}$$)$")) +
+#   theme_bw() +
+#   theme(axis.text.x = element_text(size = 11), 
+#         axis.text.y = element_text(size = 11),
+#         axis.title.x = element_text(size = 11, vjust = - 1),
+#         axis.title.y = element_text(size = 11, vjust = 2),
+#         strip.text.y = element_text(size = 11),
+#         legend.title = element_blank(),
+#         legend.text = element_text(size = 11),
+#         plot.margin = unit(c(0.5, 0.5, 0.5, 1), "cm")) +
+#   guides(fill = guide_legend(override.aes = 
+#                                list(shape = c(23,24,23,23,24,24))))
+# #NLMA_p
 # 
 # HgNLMA_p <- ggarrange(HgLMA_p, HgN_p, NLMA_p,
 #                       labels = c("(a)", "(b)", "(c)"),
 #                       font.label = list(size = 11),
 #                       ncol = 2, nrow = 2,
 #                       common.legend = TRUE, legend = "bottom")
-# 
 # HgNLMA_p
 
 # --------------------------------------------------------------------------
