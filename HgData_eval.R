@@ -104,7 +104,7 @@ dat_comp <- dat %>% dplyr::group_by(Sampling_year, Site_name, Species,
 
 # --------------------------------------------------------------------------
 
-# Separate data set into sub-data sets of interest
+# Create sub-data sets of interest
 
 #Filter for foliage of the current-season (needle y0)
 dat_y0 <- dat %>% dplyr::filter(Needle_age_class == 0)
@@ -633,13 +633,10 @@ summary_species_short_p <-
   scale_fill_manual(values = colors_barplot) +
   xlab("") + 
   ylab(TeX("Median daily Hg uptake $($$\\ng$ Hg g$^{-1}_{d.w.}$  d$^{-1}$$)$")) +
-  #scale_fill_manual(values = wes_palette("Cavalcanti1", n = 4)) +
-  #scale_x_discrete(labels = as.character(sum_dat_comp_y0$Species_short)) +
   geom_errorbar(aes(ymin = Min_Hg_daily, ymax = Max_Hg_daily),
                 position = position_dodge2(width = 0.2, preserve = "single")) +
   geom_text(aes(x = factor(Species_short),
                 y = 0, label = paste("n =", n)), vjust = -0.2, size = 6) +
-  #geom_text(aes(label = n), vjust = -0.2, size = 6) + #n samples on top of bars
   theme_bw() +
   theme(axis.text.x = element_text(size = 18, angle = 0, vjust = 0.7), 
         axis.text.y = element_text(size = 18),
