@@ -486,7 +486,15 @@ lm_avgHgdaily_paroi <- dplyr::bind_rows(lm_avgHgdaily_paroi)
 lm_avgHgdaily_paroi$model <- NULL
 
 lm_avgHgdaily_paroi <- as.data.frame(lm_avgHgdaily_paroi) %>%
-  dplyr::filter(p_value_coef < 0.05) %>% dplyr::filter(n_fit > 30)
+  dplyr::filter(p_value_coef < (0.05/54)) %>% dplyr::filter(n_fit > 30)
+  
+#calculate Bonferroni adjusted p values
+p_bonferroni <- as.data.frame(p.adjust(lm_avgHgdaily_paroi$p_value_coef,
+                                       method = "bonferroni"))
+colnames(p_bonferroni) <- "p_adjusted"
+
+lm_avgHgdaily_paroi <- cbind(lm_avgHgdaily_paroi, p_bonferroni) 
+
 
 #check for homoscedasticity using output from Breusch-Pagan test
 for (i in 1:length(lm_avgHgdaily_paroi$Species_short)) {
