@@ -7,6 +7,7 @@ require(latex2exp)
 require(ggpmisc)
 require(grid)
 
+
 # --------------------------------------------------------------------------
 
 # Read data from Zenodo repository
